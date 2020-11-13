@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Logdna-Cloudwatch CloudFormation Integration v0.1
+Parameters:
+  LambdaFunctionName:
+    Type: String
+    Default: danf-logdna-cloudwatch-function
+    Description: Enter the desired name of you Lambda Function
+  LogDnaAPIKey:
+    Type: String
+    Default: 00bac37a61229321dccc92408d807189
+    Description: Required! Insert your API key here
+  LambdaFunctionRnntime:
+    Type: String
+    Default: nodejs10.x
+    Description: Runtime for function (Refer to documentation or leave as is)
+  MyLogGroupName:
+    Type: String
+    Default: /logdna/cloudwatch-danf
+    Description: Enter the desired name of your LogDNA  
+  MyLogStreamName:
+    Type: String
+    Default: logging-test
+    Description: LogStream created for testing purposes 
+Resources: 
+#Create IAM Role Permissions for LogDNA CloudWatch Integration
+  # CloudWatchIamRole:
+  #   Type: AWS::IAM::Role
+  #   Properties: 
+  #     AssumeRolePolicyDocument: Json
+  #     Description: String
+  #     ManagedPolicyArns: 
+  #       - String
+  #     MaxSessionDuration: Integer
+  #     Path: String
+  #     PermissionsBoundary: String
+  #     Policies: 
+  #       - Policy
+  #     RoleName: String
+  #     Tags: 
+  #       - Tag
+
+#Lambda Function Setup
+  LogDNACWLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties: 
+      Code:     
+        S3Bucket: dan-cloudwatch-logdna
+        S3Key: logdna-cloudwatch.zip
+        # Upload file just once... there's a better way of handling this, but will do later
+        # ZipFile: |
+        #   def handler(event, context):
+        #     return
+      Description: Logdna Lambda Function for CloudWatch Integration 
+      FunctionName: !Ref LambdaFunctionName
+      Handler: index.handler
+      Role: arn:aws:iam::267460048499:role/service-role/padilla-cloudwatch-lambda-role-ggyt0a92
+      Runtime: !Ref LambdaFunctionRnntime
+      Environment:
+        Variables:
+           LOGDNA_KEY: !Ref LogDnaAPIKey
+#           LOGDNA_TAGS: optional,tags
+#           LOGDNA_HOSTNAME: some.hostname
+      Tags:
+        - Key: "Owner"
+          Value: "DanF"
+        - Key: "Reason"
+          Value: "Test"
+#Lambda Permissions are required in order to create a Subscription Filter
+  LogDNALambdaPermissions:
+    Type: AWS::Lambda::Permission
+    Properties: 
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref LogDNACWLambdaFunction
+      Principal: logs.us-east-1.amazonaws.com
+      SourceArn:  
+        Fn::GetAtt: 
+          - "LogDNACWLogGroups"
+          - "Arn"         
+#Create Log Groups 
+  LogDNACWLogGroups:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+#      LogGroupName: !Join ['/', [ !Ref LogGroupName, !Ref LogDNACWLambdaFunction]]
+      LogGroupName: !Ref MyLogGroupName
+      RetentionInDays: 1
+#Create LogStream associated w/ Log Group for testing purposes
+  LogDNACWStreamLogs:
+    Type: AWS::Logs::LogStream
+    Properties: 
+      LogGroupName: !Ref LogDNACWLogGroups
+      LogStreamName: !Ref MyLogStreamName
+#Create CloudWatch Subscription Filter (aka Lambda Function Trigger event)
+  LogDNASubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties: 
+      DestinationArn:
+        Fn::GetAtt: 
+          - "LogDNACWLambdaFunction"
+          - "Arn"     
+      FilterPattern: ""
+      LogGroupName: !Ref LogDNACWLogGroups

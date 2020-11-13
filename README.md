@@ -1,0 +1,1 @@
+# logdna_cloudformation_integrations

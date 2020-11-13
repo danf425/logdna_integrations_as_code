@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Dan Logdna-Cloudwatch CF test
+#Create Lambda Function
+Resources: 
+  # CloudWatchIamRole:
+  #   Type: AWS::IAM::Role
+  #   Properties: 
+  #     AssumeRolePolicyDocument: Json
+  #     Description: String
+  #     ManagedPolicyArns: 
+  #       - String
+  #     MaxSessionDuration: Integer
+  #     Path: String
+  #     PermissionsBoundary: String
+  #     Policies: 
+  #       - Policy
+  #     RoleName: String
+  #     Tags: 
+  #       - Tag
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties: 
+      Code:     
+        S3Bucket: dan-cloudwatch-logdna
+        S3Key: logdna-cloudwatch.zip
+        # Upload file just once... there's a better way of handling this, but will do later
+        # ZipFile: |
+        #   def handler(event, context):
+        #     return
+      Description: Dan Logdna-Cloudwatch CF test
+      FunctionName: danfCF_logdna_cloudwatch
+      Handler: index.handler
+      Role: arn:aws:iam::267460048499:role/service-role/padilla-cloudwatch-lambda-role-ggyt0a92
+      Runtime: nodejs10.x
+      Environment:
+        Variables:
+           LOGDNA_KEY: 00bac37a61229321dccc92408d807189
+#           LOGDNA_TAGS: optional,tags
+#           LOGDNA_HOSTNAME: some.hostname
+      Tags:
+        - Key: "Owner"
+          Value: "DanF"
+        - Key: "Reason"
+          Value: "Test"
+  LambdaPermissions:
+    Type: AWS::Lambda::Permission
+    Properties: 
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref LambdaFunction
+      Principal: logs.us-east-1.amazonaws.com
+      SourceArn:  
+        Fn::GetAtt: 
+          - "LogGroups"
+          - "Arn"         
+#Create Log Groups
+  LogGroups:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+#      LogGroupName: /aws/lambda/danfCF_logdna_cloudwatch
+      LogGroupName: !Join ['/', ['/logdna/danf-test', !Ref LambdaFunction]]
+      RetentionInDays: 1
+  StreamLogs:
+    Type: AWS::Logs::LogStream
+    Properties: 
+      LogGroupName: !Ref LogGroups
+      LogStreamName: initial-test
+  SubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties: 
+      DestinationArn:
+        Fn::GetAtt: 
+          - "LambdaFunction"
+          - "Arn"     
+      FilterPattern: test
+      LogGroupName: !Ref LogGroups
+#      RoleArn: arn:aws:iam::267460048499:role/service-role/padilla-cloudwatch-lambda-role-ggyt0a92
+
+
+
+#     RoleArn: !GetAtt CloudWatchIamRole.Arn
+
+
+# Create Event (Trigger lambda functions and associate them w/ LogGroup)
+  # Type: AWS::Events::Rule
+  # Properties: 
+  #   Description: DanF-Trigger
+  #   State: ENABLED
+  #   EventBusName: String
+  #   EventPattern: Json
+  #   Name: String
+  #   RoleArn: String
+  #   ScheduleExpression: String
+  #   Targets: 
+  #     - Id:
+  #       Arn:
+  #     - Id:
+  #       Arn: 
