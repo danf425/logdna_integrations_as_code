@@ -17,7 +17,7 @@ Parameters:
     Type: String
     Default: 00bac37a61229321dccc92408d807189
     Description: Required! Insert your API key here
-  LambdaFunctionRnntime:
+  LambdaFunctionRuntime:
     Type: String
     Default: nodejs10.x
     Description: Runtime for function (Refer to documentation or leave as is)
@@ -62,7 +62,7 @@ Resources:
       FunctionName: !Join ['', [ !Ref Owner, '-' , !Ref LambdaFunctionName]]
       Handler: index.handler
       Role: arn:aws:iam::267460048499:role/service-role/padilla-cloudwatch-lambda-role-ggyt0a92
-      Runtime: !Ref LambdaFunctionRnntime
+      Runtime: !Ref LambdaFunctionRuntime
       Environment:
         Variables:
            LOGDNA_KEY: !Ref LogDnaAPIKey

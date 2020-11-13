@@ -1,6 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Logdna-S3 CloudFormation Integration v0.1
 Parameters:
+  BucketName:
+    Description: danf-s3-integration-bucket
+    Type: String
   LambdaFunctionName:
     Type: String
     Default: danf-logdna-s3-function
@@ -9,38 +12,44 @@ Parameters:
     Type: String
     Default: 00bac37a61229321dccc92408d807189
     Description: Required! Insert your API key here
-  LambdaFunctionRnntime:
+  LambdaFunctionRuntime:
     Type: String
     Default: nodejs10.x
     Description: Runtime for function (Refer to documentation or leave as is)
-  LambdaMemorySize:
-    Type: Integer
-    Default: 128
-    Description:  Change limit depending on how heavy the files are going to be
-  LambdaTimeout:
-    Type: Integer
-    Default: 30
-    Description: 30 secs is recommended if the function is going to be used to stream the logs from gzipped files
+  # LambdaMemorySize:
+  #   Type: Integer
+  #   Default: 128
+  #   Description:  Change limit depending on how heavy the files are going to be
+  # LambdaTimeout:
+  #   Type: Integer
+  #   Default: 30
+  #   Description: 30 secs is recommended if the function is going to be used to stream the logs from gzipped files
 Resources: 
-#Create IAM Role Permissions for LogDNA CloudWatch Integration
-  # CloudWatchIamRole:
-  #   Type: AWS::IAM::Role
-  #   Properties: 
-  #     AssumeRolePolicyDocument: Json
-  #     Description: String
-  #     ManagedPolicyArns: 
-  #       - String
-  #     MaxSessionDuration: Integer
-  #     Path: String
-  #     PermissionsBoundary: String
-  #     Policies: 
-  #       - Policy
-  #     RoleName: String
-  #     Tags: 
-  #       - Tag
-
+#Create/Edit S3 Bucket 
+  Bucket:
+    Type: AWS::S3::Bucket
+    DependsOn: BucketPermission
+    Properties:
+      BucketName: !Ref BucketName
+      NotificationConfiguration:
+        LambdaConfigurations:
+        - Event: 's3:ObjectCreated:*'
+#        - Event: 's3:*:*'
+          Function: !GetAtt LogDNAS3LambdaFunction.Arn
+        - Event: 's3:ObjectRemoved:*'
+#        - Event: 's3:*:*'
+          Function: !GetAtt LogDNAS3LambdaFunction.Arn
+#Lambda + S3 Permissions
+  BucketPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref LogDNAS3LambdaFunction
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref "AWS::AccountId"
+      SourceArn: !Sub "arn:aws:s3:::${BucketName}"
 #Lambda Function Setup
-  LogDNACWLambdaFunction:
+  LogDNAS3LambdaFunction:
     Type: AWS::Lambda::Function
     Properties: 
       Code:     
@@ -53,8 +62,8 @@ Resources:
       Description: Logdna Lambda Function for S3 Integration 
       FunctionName: !Ref LambdaFunctionName
       Handler: index.handler
-      Role: arn:aws:iam::267460048499:role/service-role/padilla-cloudwatch-lambda-role-ggyt0a92
-      Runtime: !Ref LambdaFunctionRnntime
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: !Ref LambdaFunctionRuntime
       Environment:
         Variables:
            LOGDNA_KEY: !Ref LogDnaAPIKey
@@ -68,22 +77,71 @@ Resources:
 #           LOGDNA_MAX_REQUEST_RETRIES: 5
 #           LOGDNA_MAX_REQUEST_TIMEOUT: 300
 #           LOGDNA_REQUEST_RETRY_INTERVAL: 100
-      Timeout: !Ref LambdaTimeout
-      MemorySize: !Ref LambdaMemorySize
+      # Timeout: !Ref LambdaTimeout
+      # MemorySize: !Ref LambdaMemorySize
       Tags:
         - Key: "Owner"
           Value: "DanF"
         - Key: "Reason"
           Value: "Test"
-#Lambda Permissions are required in order to create a Subscription Filter
-#Modify for S3 trigger events
-  LogDNALambdaPermissions:
-    Type: AWS::Lambda::Permission
-    Properties: 
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref LogDNACWLambdaFunction
-      Principal: logs.us-east-1.amazonaws.com
-      SourceArn:  
-        Fn::GetAtt: 
-          - "LogDNACWLogGroups"
-          - "Arn"       
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: {Service: [lambda.amazonaws.com]}
+          Action: ['sts:AssumeRole']
+      Path: /
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      Policies:
+      - PolicyName: S3Policy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "s3:GetAccessPoint"
+                - "s3:GetLifecycleConfiguration"
+                - "s3:GetBucketTagging"
+                - "s3:GetInventoryConfiguration"
+                - "s3:GetObjectVersionTagging"
+                - "s3:GetBucketLogging"
+                - "s3:GetAccelerateConfiguration"
+                - "s3:GetBucketPolicy"
+                - "s3:GetObjectVersionTorrent"
+                - "s3:GetObjectAcl"
+                - "s3:GetEncryptionConfiguration"
+                - "s3:GetBucketObjectLockConfiguration"
+                - "s3:GetBucketRequestPayment"
+                - "s3:GetAccessPointPolicyStatus"
+                - "s3:GetObjectVersionAcl"
+                - "s3:GetObjectTagging"
+                - "s3:GetMetricsConfiguration"
+                - "s3:GetBucketOwnershipControls"
+                - "s3:GetBucketPublicAccessBlock"
+                - "s3:GetBucketPolicyStatus"
+                - "s3:GetObjectRetention"
+                - "s3:GetBucketWebsite"
+                - "s3:GetJobTagging"
+                - "s3:ListAccessPoints"
+                - "s3:GetBucketVersioning"
+                - "s3:GetBucketAcl"
+                - "s3:GetObjectLegalHold"
+                - "s3:GetBucketNotification"
+                - "s3:GetReplicationConfiguration"
+                - "s3:PutObject"
+                - "s3:GetObject"
+                - "s3:GetObjectTorrent"
+                - "s3:GetAccountPublicAccessBlock"
+                - "s3:DescribeJob"
+                - "s3:GetBucketCORS"
+                - "s3:GetAnalyticsConfiguration"
+                - "s3:GetObjectVersionForReplication"
+                - "s3:GetBucketLocation"
+                - "s3:GetAccessPointPolicy"
+                - "s3:GetObjectVersion"
+              Resource: "*"
+#              Resource: !Sub "arn:aws:s3:*:*:*"
