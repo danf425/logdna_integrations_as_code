@@ -1,0 +1,89 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Logdna-S3 CloudFormation Integration v0.1
+Parameters:
+  LambdaFunctionName:
+    Type: String
+    Default: danf-logdna-s3-function
+    Description: Enter the desired name of you Lambda Function
+  LogDnaAPIKey:
+    Type: String
+    Default: 00bac37a61229321dccc92408d807189
+    Description: Required! Insert your API key here
+  LambdaFunctionRnntime:
+    Type: String
+    Default: nodejs10.x
+    Description: Runtime for function (Refer to documentation or leave as is)
+  LambdaMemorySize:
+    Type: Integer
+    Default: 128
+    Description:  Change limit depending on how heavy the files are going to be
+  LambdaTimeout:
+    Type: Integer
+    Default: 30
+    Description: 30 secs is recommended if the function is going to be used to stream the logs from gzipped files
+Resources: 
+#Create IAM Role Permissions for LogDNA CloudWatch Integration
+  # CloudWatchIamRole:
+  #   Type: AWS::IAM::Role
+  #   Properties: 
+  #     AssumeRolePolicyDocument: Json
+  #     Description: String
+  #     ManagedPolicyArns: 
+  #       - String
+  #     MaxSessionDuration: Integer
+  #     Path: String
+  #     PermissionsBoundary: String
+  #     Policies: 
+  #       - Policy
+  #     RoleName: String
+  #     Tags: 
+  #       - Tag
+
+#Lambda Function Setup
+  LogDNACWLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties: 
+      Code:     
+        S3Bucket: dan-cloudwatch-logdna
+        S3Key: logdna-s3.zip
+        # Upload file just once... there's a better way of handling this, but will do later
+        # ZipFile: |
+        #   def handler(event, context):
+        #     return
+      Description: Logdna Lambda Function for S3 Integration 
+      FunctionName: !Ref LambdaFunctionName
+      Handler: index.handler
+      Role: arn:aws:iam::267460048499:role/service-role/padilla-cloudwatch-lambda-role-ggyt0a92
+      Runtime: !Ref LambdaFunctionRnntime
+      Environment:
+        Variables:
+           LOGDNA_KEY: !Ref LogDnaAPIKey
+#           LOGDNA_TAGS: optional,tags
+#           LOGDNA_HOSTNAME: some.hostname
+#           LOGDNA_URL: some.url
+#           LOGDNA_BATCH_INTERVAL: 50
+#           LOGDNA_BATCH_LIMIT: 25
+#           LOGDNA_FREE_SOCKET_TIMEOUT: 300000
+#           LOGDNA_MAX_LINE_LENGTH: 32000
+#           LOGDNA_MAX_REQUEST_RETRIES: 5
+#           LOGDNA_MAX_REQUEST_TIMEOUT: 300
+#           LOGDNA_REQUEST_RETRY_INTERVAL: 100
+      Timeout: !Ref LambdaTimeout
+      MemorySize: !Ref LambdaMemorySize
+      Tags:
+        - Key: "Owner"
+          Value: "DanF"
+        - Key: "Reason"
+          Value: "Test"
+#Lambda Permissions are required in order to create a Subscription Filter
+#Modify for S3 trigger events
+  LogDNALambdaPermissions:
+    Type: AWS::Lambda::Permission
+    Properties: 
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref LogDNACWLambdaFunction
+      Principal: logs.us-east-1.amazonaws.com
+      SourceArn:  
+        Fn::GetAtt: 
+          - "LogDNACWLogGroups"
+          - "Arn"       

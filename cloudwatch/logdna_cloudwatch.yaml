@@ -1,9 +1,17 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Logdna-Cloudwatch CloudFormation Integration v0.1
 Parameters:
+  Owner:
+    Type: String
+    Default: danf
+    Description: Enter Owner's identifier or nickname
+  OwnerEmail:
+    Type: String
+    Default: someemail@email.com
+    Description: For changes to this template please contact email below
   LambdaFunctionName:
     Type: String
-    Default: danf-logdna-cloudwatch-function
+    Default: logdna-cloudwatch-function
     Description: Enter the desired name of you Lambda Function
   LogDnaAPIKey:
     Type: String
@@ -15,7 +23,7 @@ Parameters:
     Description: Runtime for function (Refer to documentation or leave as is)
   MyLogGroupName:
     Type: String
-    Default: /logdna/cloudwatch-danf
+    Default: /logdna/cloudwatch
     Description: Enter the desired name of your LogDNA  
   MyLogStreamName:
     Type: String
@@ -51,7 +59,7 @@ Resources:
         #   def handler(event, context):
         #     return
       Description: Logdna Lambda Function for CloudWatch Integration 
-      FunctionName: !Ref LambdaFunctionName
+      FunctionName: !Join ['', [ !Ref Owner, '-' , !Ref LambdaFunctionName]]
       Handler: index.handler
       Role: arn:aws:iam::267460048499:role/service-role/padilla-cloudwatch-lambda-role-ggyt0a92
       Runtime: !Ref LambdaFunctionRnntime
@@ -61,8 +69,10 @@ Resources:
 #           LOGDNA_TAGS: optional,tags
 #           LOGDNA_HOSTNAME: some.hostname
       Tags:
-        - Key: "Owner"
-          Value: "DanF"
+        - Key: "X-Owner"
+          Value: !Ref Owner
+        - Key: "X-Contact"
+          Value: !Ref OwnerEmail
         - Key: "Reason"
           Value: "Test"
 #Lambda Permissions are required in order to create a Subscription Filter
@@ -81,7 +91,8 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties: 
 #      LogGroupName: !Join ['/', [ !Ref LogGroupName, !Ref LogDNACWLambdaFunction]]
-      LogGroupName: !Ref MyLogGroupName
+#      LogGroupName: !Ref MyLogGroupName
+      LogGroupName: !Join ['', [ !Ref MyLogGroupName, '-' , !Ref Owner]]
       RetentionInDays: 1
 #Create LogStream associated w/ Log Group for testing purposes
   LogDNACWStreamLogs:
@@ -99,3 +110,6 @@ Resources:
           - "Arn"     
       FilterPattern: ""
       LogGroupName: !Ref LogDNACWLogGroups
+#Look into stack-level tags
+#  LogDNACloudFormationLevelTags:
+#    Type: AWS::CloudFormation::Stack
