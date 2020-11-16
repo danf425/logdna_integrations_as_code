@@ -32,22 +32,6 @@ Parameters:
     Description: LogStream created for testing purposes 
 ####Resourcess###
 Resources: 
-#Create IAM Role Permissions for LogDNA CloudWatch Integration
-  # CloudWatchIamRole:
-  #   Type: AWS::IAM::Role
-  #   Properties: 
-  #     AssumeRolePolicyDocument: Json
-  #     Description: String
-  #     ManagedPolicyArns: 
-  #       - String
-  #     MaxSessionDuration: Integer
-  #     Path: String
-  #     PermissionsBoundary: String
-  #     Policies: 
-  #       - Policy
-  #     RoleName: String
-  #     Tags: 
-  #       - Tag
 #Lambda Function Setup
   LogDNACWLambdaFunction:
     Type: AWS::Lambda::Function
@@ -62,7 +46,7 @@ Resources:
       Description: Logdna Lambda Function for CloudWatch integration provisioned through CF
       FunctionName: !Join ['', [ !Ref Owner, '-' , !Ref LambdaFunctionName]]
       Handler: index.handler
-      Role: arn:aws:iam::267460048499:role/service-role/padilla-cloudwatch-lambda-role-ggyt0a92
+      Role: !GetAtt LogDNALambdaExecutionRole.Arn
       Runtime: !Ref LambdaFunctionRuntime
       Environment:
         Variables:
@@ -91,8 +75,6 @@ Resources:
   LogDNACWLogGroups:
     Type: AWS::Logs::LogGroup
     Properties: 
-#      LogGroupName: !Join ['/', [ !Ref LogGroupName, !Ref LogDNACWLambdaFunction]]
-#      LogGroupName: !Ref MyLogGroupName
       LogGroupName: !Join ['', [ !Ref MyLogGroupName, '-' , !Ref Owner]]
       RetentionInDays: 1
 #Create LogStream associated w/ Log Group for testing purposes
@@ -111,6 +93,22 @@ Resources:
           - "Arn"     
       FilterPattern: ""
       LogGroupName: !Ref LogDNACWLogGroups
+#Lambda Execution Role
+  LogDNALambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: {Service: [lambda.amazonaws.com]}
+          Action: ['sts:AssumeRole']
+      Path: /
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      - "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+      
+              
 #Look into stack-level tags
 #  LogDNACloudFormationLevelTags:
 #    Type: AWS::CloudFormation::Stack
