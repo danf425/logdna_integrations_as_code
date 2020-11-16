@@ -1,6 +1,6 @@
 # logdna_cloudformation_integrations
 
-##LogDNA CloudWatch and S3 Integrations
+## LogDNA CloudWatch and S3 Integrations
 - Go to CloudFormation
 - Make sure you are in your desired region (Internally I have my bucket in us-east-1 so it will only work there)
 - Create New Stack, upload new resources, choose either the `cloudwatch` or `s3` yaml, click `Next`
