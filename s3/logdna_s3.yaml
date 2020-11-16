@@ -1,12 +1,22 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Logdna-S3 CloudFormation Integration v0.1
+####Variables for Tagging and Functionality### 
 Parameters:
+  Owner:
+    Type: String
+    Default: danf
+    Description: Enter Owner's identifier or nickname
+  OwnerEmail:
+    Type: String
+    Default: someemail@email.com
+    Description: For changes to this template please contact email below
   BucketName:
-    Description: danf-s3-integration-bucket
+    Description: Name of bucket integrated w/ LogDNA
+    Default: danf-test-bucket
     Type: String
   LambdaFunctionName:
     Type: String
-    Default: danf-logdna-s3-function
+    Default: logdna-s3-cf-function
     Description: Enter the desired name of you Lambda Function
   LogDnaAPIKey:
     Type: String
@@ -16,31 +26,30 @@ Parameters:
     Type: String
     Default: nodejs10.x
     Description: Runtime for function (Refer to documentation or leave as is)
-  # LambdaMemorySize:
-  #   Type: Integer
-  #   Default: 128
-  #   Description:  Change limit depending on how heavy the files are going to be
-  # LambdaTimeout:
-  #   Type: Integer
-  #   Default: 30
-  #   Description: 30 secs is recommended if the function is going to be used to stream the logs from gzipped files
+  LambdaMemorySize:
+    Type: Number
+    Default: 128
+    Description:  Change limit depending on how heavy the files are going to be
+  LambdaTimeout:
+    Type: Number
+    Default: 30
+    Description: 30 secs is recommended if the function is going to be used to stream the logs from gzipped files
+####Resourcess###
 Resources: 
 #Create/Edit S3 Bucket 
   Bucket:
     Type: AWS::S3::Bucket
-    DependsOn: BucketPermission
+    DependsOn: LogDNALambdaPermission
     Properties:
       BucketName: !Ref BucketName
       NotificationConfiguration:
         LambdaConfigurations:
         - Event: 's3:ObjectCreated:*'
-#        - Event: 's3:*:*'
           Function: !GetAtt LogDNAS3LambdaFunction.Arn
         - Event: 's3:ObjectRemoved:*'
-#        - Event: 's3:*:*'
           Function: !GetAtt LogDNAS3LambdaFunction.Arn
 #Lambda + S3 Permissions
-  BucketPermission:
+  LogDNALambdaPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: 'lambda:InvokeFunction'
@@ -59,10 +68,10 @@ Resources:
         # ZipFile: |
         #   def handler(event, context):
         #     return
-      Description: Logdna Lambda Function for S3 Integration 
-      FunctionName: !Ref LambdaFunctionName
+      Description: Logdna Lambda Function for S3 integration provisioned through CF
+      FunctionName: !Join ['', [ !Ref Owner, '-' , !Ref LambdaFunctionName]]
       Handler: index.handler
-      Role: !GetAtt LambdaExecutionRole.Arn
+      Role: !GetAtt LogDNALambdaExecutionRole.Arn
       Runtime: !Ref LambdaFunctionRuntime
       Environment:
         Variables:
@@ -77,14 +86,17 @@ Resources:
 #           LOGDNA_MAX_REQUEST_RETRIES: 5
 #           LOGDNA_MAX_REQUEST_TIMEOUT: 300
 #           LOGDNA_REQUEST_RETRY_INTERVAL: 100
-      # Timeout: !Ref LambdaTimeout
-      # MemorySize: !Ref LambdaMemorySize
+      Timeout: !Ref LambdaTimeout
+      MemorySize: !Ref LambdaMemorySize
       Tags:
-        - Key: "Owner"
-          Value: "DanF"
+        - Key: "X-Owner"
+          Value: !Ref Owner
+        - Key: "X-Email"
+          Value: !Ref OwnerEmail
         - Key: "Reason"
           Value: "Test"
-  LambdaExecutionRole:
+###Lambda Execution Role 
+  LogDNALambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:

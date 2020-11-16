@@ -1,5 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Logdna-Cloudwatch CloudFormation Integration v0.1
+####Variables for Tagging and Functionality### 
 Parameters:
   Owner:
     Type: String
@@ -29,6 +30,7 @@ Parameters:
     Type: String
     Default: logging-test
     Description: LogStream created for testing purposes 
+####Resourcess###
 Resources: 
 #Create IAM Role Permissions for LogDNA CloudWatch Integration
   # CloudWatchIamRole:
@@ -46,7 +48,6 @@ Resources:
   #     RoleName: String
   #     Tags: 
   #       - Tag
-
 #Lambda Function Setup
   LogDNACWLambdaFunction:
     Type: AWS::Lambda::Function
@@ -58,7 +59,7 @@ Resources:
         # ZipFile: |
         #   def handler(event, context):
         #     return
-      Description: Logdna Lambda Function for CloudWatch Integration 
+      Description: Logdna Lambda Function for CloudWatch integration provisioned through CF
       FunctionName: !Join ['', [ !Ref Owner, '-' , !Ref LambdaFunctionName]]
       Handler: index.handler
       Role: arn:aws:iam::267460048499:role/service-role/padilla-cloudwatch-lambda-role-ggyt0a92
