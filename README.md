@@ -23,5 +23,5 @@
 
 ### Potential fix for s3 bucket situation 
 - In order for this to work outside of us-east-1, I'm thinking about either of these two fixes: 
-    - Option 1: LogDNA should host our integration zipped files in an public S3 bucket by default (cross region replication) 
+    - Option 1: LogDNA should host our integration zipped files in an public S3 bucket by default (use https://github.com/secureoptions/cfs3-uploader)
     - Option 2: As part of CF template, I can create an ec2 instance (t3.micro) to download the zipped file from GH, and upload it to an s3 bucket... probably through user-data.
