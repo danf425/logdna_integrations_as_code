@@ -46,10 +46,8 @@ resource "aws_cloudwatch_log_stream" "logdna_log_stream" {
 resource "aws_lambda_permission" "allow_cloudwatch" {
   #statement_id  = "Allow-execution-from-cloudwatch"
   action        = "lambda:InvokeFunction"
-#  function_name = aws_lambda_function.logdna_cloudwatch.arn
   function_name = aws_lambda_function.logdna_cloudwatch.arn
   principal     = "logs.us-east-1.amazonaws.com"
-#  source_arn    = aws_cloudwatch_log_group.logdna_log_group.arn
   source_arn = length(regexall(":\\*$", aws_cloudwatch_log_group.logdna_log_group.arn)) == 1 ? aws_cloudwatch_log_group.logdna_log_group.arn : "${aws_cloudwatch_log_group.logdna_log_group.arn}:*"
 
 }
@@ -57,12 +55,10 @@ resource "aws_lambda_permission" "allow_cloudwatch" {
 #Create CloudWatch Subscription Filter (aka Lambda Function Trigger event)
 resource "aws_cloudwatch_log_subscription_filter" "logdna_subscription_filter" {
   name            = "logdna-log-subscription-filter"
-  depends_on      = ["aws_lambda_permission.allow_cloudwatch"]
+  depends_on      = [aws_lambda_permission.allow_cloudwatch]
   destination_arn = aws_lambda_function.logdna_cloudwatch.arn
   filter_pattern  = ""
   log_group_name  = aws_cloudwatch_log_group.logdna_log_group.name
-#  role_arn        = aws_iam_role.iam_for_lambda.arn
-#  distribution    = "Random"
 }
 
 #Lambda Execution Role
