@@ -1,0 +1,16 @@
+logdna_api_key=""
+logdna_lambda_function_name="yourname-tf-logdna-s3-function"
+
+#Change it if you want
+logdna_s3_bucket_name="yourname-logdna-tf-s3-bucket"
+logdna_lambda_timeout=30
+logdna_lambda_memory_size=128
+
+#This shouldn't be modified until LogDNA decides to host our integrations across all regions
+region="us-east-1"
+logdna_s3_bucket="dan-cloudwatch-logdna"
+logdna_s3_key="logdna-s3.zip"
+
+#This shouldn't be changed until new integrations are released
+logdna_lambda_runtime="nodejs10.x"
+logdna_lambda_handler="index.handler"

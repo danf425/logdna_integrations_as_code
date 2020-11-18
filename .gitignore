@@ -4,3 +4,5 @@
 *.tfstate.backup
 .DS_Store
 *.tfvars
+*.lock
+*.lock.info

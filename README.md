@@ -1,1 +1,1 @@
-s3 works... but variabilize it.
+Terraform skeleton for the LogDNA Cloudwatch and S3 integrations.
