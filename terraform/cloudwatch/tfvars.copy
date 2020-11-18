@@ -1,0 +1,16 @@
+logdna_api_key=""
+logdna_lambda_function_name="yourname-tf-logdna-cloudwatch-function"
+
+#Change it if you want
+logdna_log_group_name="yourname-tf-log-group-test"
+logdna_log_group_retention=1
+logdna_test_stream="yourname-test-stream"
+
+#This shouldn't be modified until LogDNA decides to host our integrations across all regions
+region="us-east-1"
+logdna_s3_bucket="dan-cloudwatch-logdna"
+logdna_s3_key="logdna-cloudwatch.zip"
+
+#This shouldn't be changed until new integrations are released
+logdna_lambda_runtime="nodejs10.x"
+logdna_lambda_handler="index.handler"
