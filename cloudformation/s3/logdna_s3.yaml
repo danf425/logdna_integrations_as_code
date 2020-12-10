@@ -20,7 +20,7 @@ Parameters:
     Description: Enter the desired name of you Lambda Function
   LogDnaAPIKey:
     Type: String
-    Default: 00bac37a61229321dccc92408d807189
+    Default: SOMEAPI
     Description: Required! Insert your API key here
   LambdaFunctionRuntime:
     Type: String
@@ -36,7 +36,32 @@ Parameters:
     Description: 30 secs is recommended if the function is going to be used to stream the logs from gzipped files
 ####Resourcess###
 Resources: 
-#Create/Edit S3 Bucket 
+###Lambda Execution Role 
+  LogDNALambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: {Service: [lambda.amazonaws.com]}
+          Action: ['sts:AssumeRole']
+      Path: /
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      - "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
+
+###Lambda Permissions (Allow S3 to interact w/ Lambda):
+  LogDNALambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref LogDNAS3LambdaFunction
+      Principal: s3.amazonaws.com
+      SourceAccount: !Ref "AWS::AccountId"
+      SourceArn: !Sub "arn:aws:s3:::${BucketName}"
+
+###Create/Edit S3 Bucket + Lambda function trigger event
   Bucket:
     Type: AWS::S3::Bucket
     DependsOn: LogDNALambdaPermission
@@ -48,16 +73,8 @@ Resources:
           Function: !GetAtt LogDNAS3LambdaFunction.Arn
         - Event: 's3:ObjectRemoved:*'
           Function: !GetAtt LogDNAS3LambdaFunction.Arn
-#Lambda + S3 Permissions
-  LogDNALambdaPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: 'lambda:InvokeFunction'
-      FunctionName: !Ref LogDNAS3LambdaFunction
-      Principal: s3.amazonaws.com
-      SourceAccount: !Ref "AWS::AccountId"
-      SourceArn: !Sub "arn:aws:s3:::${BucketName}"
-#Lambda Function Setup
+
+###Lambda Function Setup
   LogDNAS3LambdaFunction:
     Type: AWS::Lambda::Function
     Properties: 
@@ -95,17 +112,3 @@ Resources:
           Value: !Ref OwnerEmail
         - Key: "Reason"
           Value: "Test"
-###Lambda Execution Role 
-  LogDNALambdaExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal: {Service: [lambda.amazonaws.com]}
-          Action: ['sts:AssumeRole']
-      Path: /
-      ManagedPolicyArns:
-      - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-      - "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"

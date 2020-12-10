@@ -16,7 +16,7 @@ Parameters:
     Description: Enter the desired name of you Lambda Function
   LogDnaAPIKey:
     Type: String
-    Default: 00bac37a61229321dccc92408d807189
+    Default: SOMEAPI
     Description: Required! Insert your API key here
   LambdaFunctionRuntime:
     Type: String
@@ -30,8 +30,52 @@ Parameters:
     Type: String
     Default: logging-test
     Description: LogStream created for testing purposes 
+
+    
 ####Resourcess###
 Resources: 
+###Lambda Execution Role
+  LogDNALambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal: {Service: [lambda.amazonaws.com]}
+          Action: ['sts:AssumeRole']
+      Path: /
+      ManagedPolicyArns:
+      - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      - "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
+      
+###Lambda Permissions (Allow CloudWatch to interact w/ Lambda):
+  LogDNALambdaPermissions:
+    Type: AWS::Lambda::Permission
+    Properties: 
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref LogDNACWLambdaFunction
+      Principal: logs.us-east-1.amazonaws.com
+      SourceArn:  
+        Fn::GetAtt: 
+          - "LogDNACWLogGroups"
+          - "Arn"   
+
+###Create Log Groups 
+  LogDNACWLogGroups:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: !Join ['', [ !Ref MyLogGroupName, '-' , !Ref Owner]]
+      RetentionInDays: 1
+
+
+###Create Logstream associate w/ Log Group (for testing purposes)
+  LogDNACWStreamLogs:
+    Type: AWS::Logs::LogStream
+    Properties: 
+      LogGroupName: !Ref LogDNACWLogGroups
+      LogStreamName: !Ref MyLogStreamName
+
 #Lambda Function Setup
   LogDNACWLambdaFunction:
     Type: AWS::Lambda::Function
@@ -60,30 +104,9 @@ Resources:
           Value: !Ref OwnerEmail
         - Key: "Reason"
           Value: "Test"
-#Lambda Permissions are required in order to create a Subscription Filter
-  LogDNALambdaPermissions:
-    Type: AWS::Lambda::Permission
-    Properties: 
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref LogDNACWLambdaFunction
-      Principal: logs.us-east-1.amazonaws.com
-      SourceArn:  
-        Fn::GetAtt: 
-          - "LogDNACWLogGroups"
-          - "Arn"         
-#Create Log Groups 
-  LogDNACWLogGroups:
-    Type: AWS::Logs::LogGroup
-    Properties: 
-      LogGroupName: !Join ['', [ !Ref MyLogGroupName, '-' , !Ref Owner]]
-      RetentionInDays: 1
-#Create LogStream associated w/ Log Group for testing purposes
-  LogDNACWStreamLogs:
-    Type: AWS::Logs::LogStream
-    Properties: 
-      LogGroupName: !Ref LogDNACWLogGroups
-      LogStreamName: !Ref MyLogStreamName
-#Create CloudWatch Subscription Filter (aka Lambda Function Trigger event)
+      
+
+###Create CloudWatch Subscription Filter (aka Lambda Function Trigger event)
   LogDNASubscriptionFilter:
     Type: AWS::Logs::SubscriptionFilter
     Properties: 
@@ -93,21 +116,6 @@ Resources:
           - "Arn"     
       FilterPattern: ""
       LogGroupName: !Ref LogDNACWLogGroups
-#Lambda Execution Role
-  LogDNALambdaExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal: {Service: [lambda.amazonaws.com]}
-          Action: ['sts:AssumeRole']
-      Path: /
-      ManagedPolicyArns:
-      - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-      - "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"
-      
               
 #Look into stack-level tags
 #  LogDNACloudFormationLevelTags:
