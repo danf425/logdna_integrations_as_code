@@ -3,7 +3,7 @@ provider "aws" {
   region  = var.region
 }
 
-#Lambda Execution Role
+###Lambda Execution Role:
 resource "aws_iam_role" "iam_for_lambda" {
   name = "iam_for_lambda"
 
@@ -22,19 +22,17 @@ resource "aws_iam_role" "iam_for_lambda" {
 }
 EOF
 }
-
+### Append policies to new role:
 resource "aws_iam_role_policy_attachment" "attach-lambda-execution-role" {
   role       = aws_iam_role.iam_for_lambda.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
-
 resource "aws_iam_role_policy_attachment" "attach-s3-read-access-role" {
   role       = aws_iam_role.iam_for_lambda.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"
 }
 
-
-#Lambda + S3 Permissions
+###Lambda Permissions (Allow S3 to interact w/ Lambda):
 resource "aws_lambda_permission" "logdna_allow_bucket_permission" {
   statement_id  = "AllowExecutionFromS3Bucket"
   action        = "lambda:InvokeFunction"
@@ -42,7 +40,13 @@ resource "aws_lambda_permission" "logdna_allow_bucket_permission" {
   principal     = "s3.amazonaws.com"
   source_arn    = aws_s3_bucket.bucket.arn
 }
-#Lambda Function Setup
+
+###Create/Edit S3 Bucket
+resource "aws_s3_bucket" "bucket" {
+  bucket = var.logdna_s3_bucket_name
+}
+
+###Lambda Function Setup
 resource "aws_lambda_function" "logdna_s3" {
   function_name = var.logdna_lambda_function_name
   description   = "Logdna Lambda Function for S3 integration provisioned through TF"
@@ -65,12 +69,7 @@ resource "aws_lambda_function" "logdna_s3" {
   # ]  
 }
 
-#Create/Edit S3 Bucket
-resource "aws_s3_bucket" "bucket" {
-  bucket = var.logdna_s3_bucket_name
-}
-
-#S3 Lambda notifications (LOGS!)
+###Create S3 Bucket notifications (aka Lambda Function Trigger event)
 resource "aws_s3_bucket_notification" "bucket_notification" {
   bucket = aws_s3_bucket.bucket.id
 

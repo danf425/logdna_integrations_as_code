@@ -1,2 +1,5 @@
-Skeletons for provisioning the LogDNA integrations to S3 and Cloudwatch for `Terraform` and CloudFormation`
+Skeletons for provisioning LogDNA integrations:
 
+1) AWS CloudWatch Integrations
+2) AWS S3 Integrations
+3) ...
